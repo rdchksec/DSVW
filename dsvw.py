@@ -277,6 +277,7 @@ class ReqHandler(http.server.BaseHTTPRequestHandler):
                             for case in CASES)).replace(
                                 "<a href=\"None\">vulnerable</a>|",
                                 "<b>-</b>|")
+                    content += "<form action=\"/get_pass\" method=\"POST\"><input name=\"id\" id=\"id\" value=\"3\" type=\"hidden\"><button>Get My Password</button></form>"
             elif path == "/users.json":
                 content = "%s%s%s" % (
                     "" if not "callback" in params else "%s(" %
@@ -317,6 +318,36 @@ class ReqHandler(http.server.BaseHTTPRequestHandler):
                            and GITHUB not in content else "")).encode())
             self.wfile.flush()
 
+    def do_POST(self):
+        path, query = self.path.split(
+            '?', 1) if '?' in self.path else (self.path, "")
+        code, content, params, cursor = http.client.OK, HTML_PREFIX, dict(
+            (match.group("parameter"),
+             urllib.parse.unquote(','.join(
+                 re.findall(
+                     r"(?:\A|[?&])%s=([^&]+)" %
+                     match.group("parameter"), query))))
+            for match in re.finditer(
+                r"((\A|[?&])(?P<parameter>[\w\[\]]+)=)([^&]+)",
+                query)), connection.cursor()
+        if path == '/get_pass':
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+            id = body.decode('utf-8')[3]
+            cursor.execute(
+                "SELECT password FROM users WHERE id=" + id)
+            resp = str(cursor.fetchone())
+            self.send_response(200)
+            self.send_response(code)
+            self.send_header("Connection", "close")
+            self.send_header("X-XSS-Protection", "0")
+            self.send_header(
+                "Content-Type", "%s%s" %
+                ("text/html" if content.startswith("<!DOCTYPE html>") else
+                 "text/plain", "; charset=%s" % params.get("charset", "utf8")))
+            self.end_headers()
+            self.wfile.write(resp.encode())
+            self.wfile.flush()
 
 class ThreadingServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     def server_bind(self):
