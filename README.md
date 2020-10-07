@@ -1,21 +1,16 @@
-
-Quick start
+Web Security Training
 ----
 
-Run the following command:
+Run the server only in Docker (otherwise it may make your local machine ):
 ```
-$ python dsvw.py
+$ docker build . -t dsvw
 
-[i] running HTTP server at 'http://127.0.0.1:8080'...
+$ docker run -p 1234:8888 dsvw
 ```
 
-and navigate your browser to http://127.0.0.1:8080/:
+and navigate your browser to http://127.0.0.1:8888/:
 
 Requirements
 ----
 
-To install reqs via pip, run the following command:
-
-```
-pip install -r requirements.txt
-```
+Install Docker
